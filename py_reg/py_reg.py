@@ -3,7 +3,7 @@ import winreg
 from typing import Union, Iterable
 
 
-log_easy_reg = logging.getLogger('py_reg')
+log_py_reg = logging.getLogger('py_reg')
 
 
 class RegObj:
@@ -44,9 +44,9 @@ class RegObj:
             self._open_key()
         elif mode == 'create':
             self.ctx_key = winreg.CreateKeyEx(self.hkey, self._key, 0, self._access)
-            log_easy_reg.debug(f'open or create[{self.full_path}]')
+            log_py_reg.debug(f'open or create[{self.full_path}]')
         else:
-            log_easy_reg.exception(f'parameter mode got "{mode}", expected "open" or "create"')
+            log_py_reg.exception(f'parameter mode got "{mode}", expected "open" or "create"')
             raise ValueError(f'parameter mode got "{mode}", expected "open" or "create"')
 
         self._types = ['none', 'sz', 'expand_sz', 'binary', 'dword', 'dword_big_endian', 'link', 'multi_sz',
@@ -77,8 +77,9 @@ class RegObj:
     def _open_key(self) -> None:
         try:
             self.ctx_key = winreg.OpenKey(self.hkey, self._key, 0, self._access)
-            log_easy_reg.debug(f'open [{self.full_path}]')
+            log_py_reg.debug(f'open [{self.full_path}]')
         except OSError:
+            log_py_reg.exception(f'error open [{self.full_path}]')
             raise
 
     def open_sub_key(self, name: str) -> None:
@@ -106,13 +107,14 @@ class RegObj:
         параметр open_key как True, открывает созданный раздел
 
         :param name: имя создаваемого подраздела
-        :param open_key: если True, откроет созданный раздел
+        :param open_key: если True, откроет созданный раздел (False по умолчанию)
         :return: None
         """
         try:
             winreg.CreateKeyEx(self.ctx_key, name, 0, self._access)
-            log_easy_reg.debug(f'create [{name}] with [{self.full_path}]')
+            log_py_reg.debug(f'create [{name}] with [{self.full_path}]')
         except OSError:
+            log_py_reg.exception(f'error create [{name}] with [{self.full_path}]')
             raise
         if open_key:
             self.open_sub_key(name)
@@ -126,8 +128,9 @@ class RegObj:
         """
         try:
             winreg.DeleteKey(self.ctx_key, name)
-            log_easy_reg.debug(f'delete key [{name}] with [{self.full_path}]')
+            log_py_reg.debug(f'delete key [{name}] with [{self.full_path}]')
         except OSError:
+            log_py_reg.exception(f'error delete key [{name}] with [{self.full_path}]')
             raise
 
     def delete_me(self) -> None:
@@ -138,8 +141,9 @@ class RegObj:
         """
         try:
             winreg.DeleteKey(self.hkey, self._key)
-            log_easy_reg.debug(f'delete key [{self.full_path}]')
+            log_py_reg.debug(f'delete key [{self.full_path}]')
         except OSError:
+            log_py_reg.exception(f'error delete key [{self.full_path}]')
             raise
         self.backward()
 
@@ -152,8 +156,9 @@ class RegObj:
         """
         try:
             winreg.DeleteValue(self.ctx_key, name)
-            log_easy_reg.debug(f'delete value [{name}] with [{self.full_path}]')
+            log_py_reg.debug(f'delete value [{name}] with [{self.full_path}]')
         except OSError:
+            log_py_reg.exception(f'error delete value [{name}] with [{self.full_path}]')
             raise
 
     def enum_key(self) -> Iterable[str]:
@@ -207,9 +212,10 @@ class RegObj:
         """
         try:
             info = winreg.QueryInfoKey(self.ctx_key)
-            log_easy_reg.debug(f'get info key [{self.full_path}]')
+            log_py_reg.debug(f'get info key [{self.full_path}]')
             return info
         except OSError:
+            log_py_reg.exception(f'error get info key [{self.full_path}]')
             raise
 
     def info_value(self, value_name: str) -> tuple[str, Union[str, int]]:
@@ -221,9 +227,10 @@ class RegObj:
         """
         try:
             value, type_value = winreg.QueryValueEx(self.ctx_key, value_name)
-            log_easy_reg.debug(f'get info value_name [{value_name}] with [{self.full_path}]')
+            log_py_reg.debug(f'get info value_name [{value_name}] with [{self.full_path}]')
             return self._types[type_value], value
         except OSError:
+            log_py_reg.exception(f'error get info value_name [{value_name}] with [{self.full_path}]')
             raise
 
     def set_value(self, name: str, type_value: int, value: Union[str, int]) -> None:
@@ -237,9 +244,11 @@ class RegObj:
         """
         try:
             winreg.SetValueEx(self.ctx_key, name, 0, type_value, value)
-            log_easy_reg.debug(f'set or create value_name:[{name}], value_type:[{self._types[type_value]}], '
+            log_py_reg.debug(f'set or create value_name:[{name}], value_type:[{self._types[type_value]}], '
                                f'value:[{value}] with [{self.full_path}]')
         except OSError:
+            log_py_reg.exception(f'error set or create value_name:[{name}], value_type:[{self._types[type_value]}], '
+                                 f'value:[{value}] with [{self.full_path}]')
             raise
 
 
@@ -298,21 +307,29 @@ class PyReg:
         self.REG_WHOLE_HIVE_VOLATILE = 1
 
     @staticmethod
-    def open(reg_path: str, access: int = winreg.KEY_ALL_ACCESS) -> RegObj:
+    def open(reg_path: str, access: int = winreg.KEY_ALL_ACCESS, create: bool = False) -> RegObj:
         """
+        открывает ключ, если он не существует, вызывает ошибку OSError, если 'create' не указан как True
 
         :param reg_path: полный путь к открываемому разделу
         :param access: уровень доступа
             https://docs.python.org/3/library/winreg.html#access-rights
+        :param create: создать ключ, если он не существует
         :return:
         """
-        return RegObj(reg_path, 'open', access)
-
-    @staticmethod
-    def create(reg_path: str, access: int = winreg.KEY_ALL_ACCESS) -> RegObj:
-        return RegObj(reg_path, 'create', access)
+        if create:
+            return RegObj(reg_path, 'create', access)
+        else:
+            return RegObj(reg_path, 'open', access)
 
     def execute(self, reg_string: str):
+        """
+        Парсит строку с .reg командами
+        На данный момент поддерживает только DWORD, BINARY, SZ
+
+        :param reg_string: строка с .reg командами
+        :return:
+        """
         # clear
         while "\n\n" in reg_string:
             reg_string = reg_string.replace("\n\n", "\n")

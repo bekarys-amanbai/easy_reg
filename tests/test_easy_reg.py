@@ -1,14 +1,13 @@
 import pytest
 
-from src.easy_reg import easy_reg, RegObj
+from py_reg import py_reg, RegObj
 
 
 @pytest.fixture
 def open_key():
-    open_key = easy_reg.open(r'HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer')
+    open_key = py_reg.open(r'HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer')
 
     open_key.create_sub_key('AAA_TEST_EASY_REG', True)
-
     return open_key
 
 
@@ -56,24 +55,24 @@ def test_info_value():
 
 
 @pytest.mark.parametrize("name, type, value", [
-    ('Zero', easy_reg.REG_DWORD, 0),
-    ('One', easy_reg.REG_DWORD, 1),
-    ('Dwatchat', easy_reg.REG_DWORD, 20),
-    ('Milion', easy_reg.REG_DWORD, 1_000_000),
+    ('Zero', py_reg.REG_DWORD, 0),
+    ('One', py_reg.REG_DWORD, 1),
+    ('Dwatchat', py_reg.REG_DWORD, 20),
+    ('Milion', py_reg.REG_DWORD, 1_000_000),
 
-    ('Zeros_z', easy_reg.REG_SZ, ''),
-    ('Ones_z', easy_reg.REG_SZ, 'fea'),
-    ('Dwatchat_sz', easy_reg.REG_SZ, 'b4iifj;as'),
-    ('Milion_sz', easy_reg.REG_SZ, 'bfa45y&(*&fs'),
+    ('Zeros_z', py_reg.REG_SZ, ''),
+    ('Ones_z', py_reg.REG_SZ, 'fea'),
+    ('Dwatchat_sz', py_reg.REG_SZ, 'b4iifj;as'),
+    ('Milion_sz', py_reg.REG_SZ, 'bfa45y&(*&fs'),
 
-    ('Zero_b', easy_reg.REG_BINARY, b'0'),
-    ('One_b', easy_reg.REG_BINARY, b'1'),
-    ('Dwatchat_b', easy_reg.REG_BINARY, b'20'),
-    ('Milion_b', easy_reg.REG_BINARY, b'1_000_000'),
-    ('Zero_sz_b', easy_reg.REG_BINARY, None),  # если value = b'' то из реестра вернет None
-    ('One_sz_b', easy_reg.REG_BINARY, b'fea'),
-    ('Dwatchat_sz_b', easy_reg.REG_BINARY, b'b4iifj;as'),
-    ('Milion_sz_b', easy_reg.REG_BINARY, b'bfa45y&(*&fs'),
+    ('Zero_b', py_reg.REG_BINARY, b'0'),
+    ('One_b', py_reg.REG_BINARY, b'1'),
+    ('Dwatchat_b', py_reg.REG_BINARY, b'20'),
+    ('Milion_b', py_reg.REG_BINARY, b'1_000_000'),
+    ('Zero_sz_b', py_reg.REG_BINARY, None),  # если value = b'' то из реестра вернет None
+    ('One_sz_b', py_reg.REG_BINARY, b'fea'),
+    ('Dwatchat_sz_b', py_reg.REG_BINARY, b'b4iifj;as'),
+    ('Milion_sz_b', py_reg.REG_BINARY, b'bfa45y&(*&fs'),
 ])
 def test_set_value(open_key: RegObj, name, type, value):
     open_key.set_value(name, type, value)
