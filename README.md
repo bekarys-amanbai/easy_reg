@@ -9,7 +9,10 @@ me_reg = py_reg.open(r'HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersi
 ```
 
 ## class easy_reg
-содержит всего 3 метода:
+содержит всего 2 метода:
 
-`open(reg_path: str, access: int = winreg.KEY_ALL_ACCESS) -> RegObj:`
+`open(reg_path: str, access: int = winreg.KEY_ALL_ACCESS, create: bool = False) -> RegObj:`
 
+`execute(self, reg_string: str):`
+Парсит строку с .reg командами
+На данный момент поддерживает только DWORD, BINARY, SZ
